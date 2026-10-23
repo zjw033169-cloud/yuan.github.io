@@ -238,6 +238,20 @@
             }
         }
     </style>
+    <style>
+    .visitor-count {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        color: #6D91B8;
+        font-size: 13px;
+    }
+
+    #site-counter {
+        font-weight: 600;
+    }
+</style>
 </head>
     
 <script>
@@ -549,53 +563,36 @@ async function loadArticle() {
 
 loadArticle();
 </script>
-   
-<script>
-(function loadVisitorCount() {
-    const timer = setInterval(function () {
-        if (
-            window.goatcounter &&
-            window.goatcounter.visit_count
-        ) {
-            clearInterval(timer);
 
-            const counter = document.getElementById("site-counter");
-            counter.textContent = "";
-
-            window.goatcounter.visit_count({
-                append: "#site-counter",
-                path: "TOTAL",
-                no_branding: true,
-                style: `
-                    div {
-                        border: none;
-                        background: transparent;
-                        color: #6D91B8;
-                        padding: 0;
-                        font: inherit;
-                    }
-                    #gcvc-for {
-                        display: none;
-                    }
-                    #gcvc-by {
-                        display: none;
-                    }
-                    #gcvc-views {
-                        font-weight: 600;
-                    }
-                `
-            });
-        }
-    }, 100);
-})();
-</script>
-
-    <footer class="site-footer">
+<footer class="site-footer">
     <p>A Quiet Corner · 一个安静的角落</p>
-    <p>
-        总访问量：
-        <span id="site-counter">正在加载...</span>
+    <p class="visitor-count">
+        <span>总访问量</span>
+        <span id="site-counter">加载中...</span>
     </p>
 </footer>
+    <script>
+async function loadVisitorCount() {
+    const counter = document.getElementById("site-counter");
+
+    try {
+        const response = await fetch(
+            "https://你的站点代码.goatcounter.com/counter/TOTAL.json"
+        );
+
+        if (!response.ok) {
+            throw new Error("统计数据加载失败");
+        }
+
+        const data = await response.json();
+        counter.textContent = data.count;
+    } catch (error) {
+        counter.textContent = "暂不可用";
+        console.error(error);
+    }
+}
+
+loadVisitorCount();
+</script>
 </body>
 </html>
