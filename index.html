@@ -576,9 +576,10 @@ async function loadVisitorCount() {
     const counter = document.getElementById("site-counter");
 
     try {
-        const response = await fetch(
-            "https://yuan.goatcounter.com/counter/TOTAL.json"
-        );
+const response = await fetch(
+    "https://yuan.goatcounter.com/counter/TOTAL.json?t=" + Date.now(),
+    { cache: "no-store" }
+);
 
         if (!response.ok) {
             throw new Error("统计数据加载失败");
