@@ -549,7 +549,8 @@ async function loadArticle() {
 
 loadArticle();
 </script>
-    <script>
+   
+<script>
 (function loadVisitorCount() {
     const timer = setInterval(function () {
         if (
@@ -558,14 +559,37 @@ loadArticle();
         ) {
             clearInterval(timer);
 
+            const counter = document.getElementById("site-counter");
+            counter.textContent = "";
+
             window.goatcounter.visit_count({
-                append: '#site-counter',
-                path: 'TOTAL'
+                append: "#site-counter",
+                path: "TOTAL",
+                no_branding: true,
+                style: `
+                    div {
+                        border: none;
+                        background: transparent;
+                        color: #6D91B8;
+                        padding: 0;
+                        font: inherit;
+                    }
+                    #gcvc-for {
+                        display: none;
+                    }
+                    #gcvc-by {
+                        display: none;
+                    }
+                    #gcvc-views {
+                        font-weight: 600;
+                    }
+                `
             });
         }
     }, 100);
 })();
 </script>
+
     <footer class="site-footer">
     <p>A Quiet Corner · 一个安静的角落</p>
     <p>
