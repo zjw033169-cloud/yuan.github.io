@@ -502,5 +502,45 @@ loadArticle();
             draw();
         })();
     </script>
+<script>
+async function loadArticle() {
+    try {
+        const response = await fetch("article-python.html");
+
+        if (!response.ok) {
+            throw new Error("文章页面加载失败：" + response.status);
+        }
+
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(
+            html,
+            "text/html"
+        );
+
+        // 首页标题直接读取文章中的 h1
+        const title = doc.querySelector("h1")?.textContent.trim();
+
+        // 首页摘要读取文章页面的 meta 信息
+        const summary = doc.querySelector(
+            'meta[name="article-summary"]'
+        )?.content;
+
+        const titleElement = document.getElementById("python-title");
+        const summaryElement = document.getElementById("python-summary");
+
+        if (title && titleElement) {
+            titleElement.textContent = title;
+        }
+
+        if (summary && summaryElement) {
+            summaryElement.textContent = summary;
+        }
+    } catch (error) {
+        console.error("首页文章信息同步失败：", error);
+    }
+}
+
+loadArticle();
+</script>
 </body>
 </html>
