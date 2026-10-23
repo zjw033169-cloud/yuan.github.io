@@ -232,7 +232,45 @@
         }
     </style>
 </head>
+    
+<script>
+async function loadArticle() {
+    try {
+        const response = await fetch("article-python.html");
 
+        if (!response.ok) {
+            throw new Error("无法加载文章");
+        }
+
+        const html = await response.text();
+        const doc = new DOMParser().parseFromString(
+            html,
+            "text/html"
+        );
+
+        const title = doc.querySelector(
+            'meta[name="article-title"]'
+        )?.content;
+
+        const summary = doc.querySelector(
+            'meta[name="article-summary"]'
+        )?.content;
+
+        if (title) {
+            document.getElementById("python-title").textContent = title;
+        }
+
+        if (summary) {
+            document.getElementById("python-summary").textContent = summary;
+        }
+    } catch (error) {
+        console.error("文章信息加载失败：", error);
+    }
+}
+
+loadArticle();
+</script>
+    
 <body>
     <canvas id="network" aria-hidden="true"></canvas>
 
@@ -272,22 +310,16 @@
         <section id="articles">
             <div class="section-label">NOTES & IDEAS</div>
             <h2>最近的文章</h2>
+            
+<a class="article" href="article-python.html">
+    <span class="date">学习笔记</span>
+    <h3 id="python-title">从 Python 开始理解数据</h3>
+    <p id="python-summary">
+        学习使用 Python 处理表格、分析数据，并通过图表发现规律。
+    </p>
+</a>
 
-            <a class="article" href="article-python.html">
-                <span class="date">学习笔记</span>
-                <h3>从 Python 开始理解数据</h3>
-                <p>
-                    把代码变成工具，用数学和数据观察真实世界。
-                </p>
-            </a>
-
-            <a class="article" href="#contact">
-                <span class="date">阅读与思考</span>
-                <h3>我们如何知道自己相信的是真的？</h3>
-                <p>
-                    关于证据、怀疑，以及独立判断的价值。
-                </p>
-            </a>
+           
         </section>
 
         <section id="contact">
