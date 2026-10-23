@@ -542,5 +542,29 @@ async function loadArticle() {
 
 loadArticle();
 </script>
+    <script>
+(function loadVisitorCount() {
+    const timer = setInterval(function () {
+        if (
+            window.goatcounter &&
+            window.goatcounter.visit_count
+        ) {
+            clearInterval(timer);
+
+            window.goatcounter.visit_count({
+                append: '#site-counter',
+                path: 'TOTAL'
+            });
+        }
+    }, 100);
+})();
+</script>
+    <footer class="site-footer">
+    <p>A Quiet Corner · 一个安静的角落</p>
+    <p>
+        总访问量：
+        <span id="site-counter">正在加载...</span>
+    </p>
+</footer>
 </body>
 </html>
