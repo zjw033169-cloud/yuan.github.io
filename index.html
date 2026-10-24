@@ -561,27 +561,7 @@ async function loadArticle() {
 }
 
 loadArticle();
-</script>
 
-<footer class="site-footer">
-    <p>A Quiet Corner · 一个安静的角落</p>
-    <p class="visitor-count">
-        <span>总访问量</span>
-        <span id="site-counter">加载中...</span>
-    </p>
-</footer>
-    <script>
-(function waitForGoatCounter() {
-    if (window.goatcounter && window.goatcounter.visit_count) {
-        window.goatcounter.visit_count({
-            append: "#site-counter",
-            path: "TOTAL",
-            no_branding: true
-        });
-    } else {
-        setTimeout(waitForGoatCounter, 100);
-    }
-})();
 </script>
 </body>
 </html>
