@@ -1,6 +1,10 @@
 
 (() => {
-    // 1. 创建动画画布
+    // Prevent duplicate canvases when the script runs again
+    if (window.__neuralNetworkCleanup) {
+        window.__neuralNetworkCleanup();
+    }
+
     const canvas = document.createElement("canvas");
     canvas.id = "particle-canvas";
 
@@ -15,122 +19,274 @@
 
     document.body.appendChild(canvas);
 
-    // 让文章显示在动画上方
-    document.querySelectorAll("article").forEach(article => {
-        article.style.position = "relative";
-        article.style.zIndex = "1";
-    });
-
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+        canvas.remove();
+        return;
+    }
 
     let width = 0;
     let height = 0;
     let particles = [];
-    let mouse = { x: -1000, y: -1000 };
-    let animationId;
+    let animationId = 0;
+    let running = true;
 
-    const maxDistance = 120;
+    const mouse = {
+        x: -1000,
+        y: -1000
+    };
 
-    // 2. 根据窗口大小创建粒子
+    // Visual settings
+    const MAX_PARTICLES = 220;
+    const PARTICLE_AREA = 5200;
+    const CONNECTION_DISTANCE = 155;
+    const MOUSE_DISTANCE = 190;
+    const COLORS = [
+        "76, 161, 255",
+        "0, 190, 255",
+        "75, 125, 255",
+        "100, 215, 255"
+    ];
+
+    // Create particles
+    function createParticle() {
+        return {
+            x: Math.random() * width,
+            y: Math.random() * height,
+            vx: (Math.random() - 0.5) * 0.65,
+            vy: (Math.random() - 0.5) * 0.65,
+            radius: 1 + Math.random() * 1.8,
+            alpha: 0.35 + Math.random() * 0.5,
+            color: COLORS[
+                Math.floor(Math.random() * COLORS.length)
+            ],
+            phase: Math.random() * Math.PI * 2
+        };
+    }
+
+    // Resize canvas without stretching the drawing
     function resize() {
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2
+        );
 
         width = window.innerWidth;
         height = window.innerHeight;
 
-        canvas.width = width * dpr;
-        canvas.height = height * dpr;
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
 
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
         const count = Math.min(
-            65,
-            Math.floor(width * height / 12000)
+            MAX_PARTICLES,
+            Math.max(
+                70,
+                Math.floor(width * height / PARTICLE_AREA)
+            )
         );
 
-        particles = Array.from({ length: count }, () => ({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            vx: (Math.random() - 0.5) * 0.5,
-            vy: (Math.random() - 0.5) * 0.5
-        }));
+        // Keep the existing particles where possible
+        if (particles.length > count) {
+            particles.length = count;
+        }
+
+        while (particles.length < count) {
+            particles.push(createParticle());
+        }
     }
 
-    // 3. 绘制粒子、粒子连线和鼠标连线
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
+    // Draw a softly glowing particle
+    function drawParticle(p, time) {
+        const pulse =
+            0.85 + 0.15 * Math.sin(time * 0.0015 + p.phase);
 
+        const radius = p.radius * pulse;
+
+        // Glow
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius * 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.color}, ${p.alpha * 0.08})`;
+        ctx.fill();
+
+        // Particle core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${p.color}, ${p.alpha})`;
+        ctx.fill();
+
+        // Bright center
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(210, 245, 255, 0.9)";
+        ctx.fill();
+    }
+
+    // Connect nearby particles
+    function drawConnections() {
         for (let i = 0; i < particles.length; i++) {
             const p = particles[i];
+
+            for (let j = i + 1; j < particles.length; j++) {
+                const q = particles[j];
+
+                const dx = p.x - q.x;
+                const dy = p.y - q.y;
+                const distanceSquared = dx * dx + dy * dy;
+
+                if (
+                    distanceSquared <
+                    CONNECTION_DISTANCE * CONNECTION_DISTANCE
+                ) {
+                    const distance = Math.sqrt(distanceSquared);
+                    const strength = 1 - distance / CONNECTION_DISTANCE;
+
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(q.x, q.y);
+
+                    ctx.strokeStyle =
+                        `rgba(48, 145, 255, ${strength * 0.32})`;
+                    ctx.lineWidth = 0.5 + strength * 0.55;
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    // Connect the mouse to nearby particles
+    function drawMouseConnections() {
+        for (const p of particles) {
+            const dx = p.x - mouse.x;
+            const dy = p.y - mouse.y;
+            const distance = Math.hypot(dx, dy);
+
+            if (distance < MOUSE_DISTANCE) {
+                const strength = 1 - distance / MOUSE_DISTANCE;
+
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(mouse.x, mouse.y);
+
+                ctx.strokeStyle =
+                    `rgba(0, 205, 255, ${strength * 0.7})`;
+                ctx.lineWidth = 0.7 + strength;
+                ctx.stroke();
+            }
+        }
+    }
+
+    // Animate particle movement and mouse interaction
+    function updateParticles() {
+        for (const p of particles) {
+            const dx = p.x - mouse.x;
+            const dy = p.y - mouse.y;
+            const distance = Math.hypot(dx, dy);
+
+            // Gentle mouse repulsion
+            if (distance > 0 && distance < 115) {
+                const force = (115 - distance) / 115;
+
+                p.vx += (dx / distance) * force * 0.035;
+                p.vy += (dy / distance) * force * 0.035;
+            }
+
+            // Keep movement smooth
+            p.vx *= 0.998;
+            p.vy *= 0.998;
+
+            const speed = Math.hypot(p.vx, p.vy);
+            const maxSpeed = 0.85;
+
+            if (speed > maxSpeed) {
+                p.vx = (p.vx / speed) * maxSpeed;
+                p.vy = (p.vy / speed) * maxSpeed;
+            }
+
+            // Prevent particles from becoming motionless
+            if (speed < 0.08) {
+                p.vx += (Math.random() - 0.5) * 0.025;
+                p.vy += (Math.random() - 0.5) * 0.025;
+            }
 
             p.x += p.vx;
             p.y += p.vy;
 
-            if (p.x < 0 || p.x > width) p.vx *= -1;
-            if (p.y < 0 || p.y > height) p.vy *= -1;
-
-            // 粒子之间的连线
-            for (let j = i + 1; j < particles.length; j++) {
-                const q = particles[j];
-                const d = Math.hypot(p.x - q.x, p.y - q.y);
-
-                if (d < maxDistance) {
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, p.y);
-                    ctx.lineTo(q.x, q.y);
-                    ctx.strokeStyle =
-                        `rgba(76, 131, 195, ${0.15 * (1 - d / maxDistance)})`;
-                    ctx.stroke();
-                }
+            // Bounce off screen edges
+            if (p.x < 0) {
+                p.x = 0;
+                p.vx = Math.abs(p.vx);
+            } else if (p.x > width) {
+                p.x = width;
+                p.vx = -Math.abs(p.vx);
             }
 
-            // 粒子与鼠标之间的连线
-            const distance = Math.hypot(
-                p.x - mouse.x,
-                p.y - mouse.y
-            );
-
-            if (distance < maxDistance) {
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(mouse.x, mouse.y);
-                ctx.strokeStyle =
-                    `rgba(76, 131, 195, ${0.35 * (1 - distance / maxDistance)})`;
-                ctx.stroke();
+            if (p.y < 0) {
+                p.y = 0;
+                p.vy = Math.abs(p.vy);
+            } else if (p.y > height) {
+                p.y = height;
+                p.vy = -Math.abs(p.vy);
             }
+        }
+    }
 
-            // 绘制粒子
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(76, 131, 195, 0.55)";
-            ctx.fill();
+    function draw(time) {
+        if (!running) return;
+
+        ctx.clearRect(0, 0, width, height);
+
+        updateParticles();
+        drawConnections();
+        drawMouseConnections();
+
+        for (const p of particles) {
+            drawParticle(p, time);
         }
 
         animationId = requestAnimationFrame(draw);
     }
 
-    // 4. 监听鼠标和窗口变化
-    window.addEventListener("mousemove", event => {
+    function onMouseMove(event) {
         mouse.x = event.clientX;
         mouse.y = event.clientY;
-    });
+    }
 
-    window.addEventListener("mouseout", event => {
-        if (!event.relatedTarget) {
-            mouse.x = -1000;
-            mouse.y = -1000;
+    function onMouseLeave() {
+        mouse.x = -1000;
+        mouse.y = -1000;
+    }
+
+    function cleanup() {
+        running = false;
+        cancelAnimationFrame(animationId);
+
+        window.removeEventListener("resize", resize);
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseout", onMouseOut);
+        window.removeEventListener("pagehide", cleanup);
+
+        canvas.remove();
+
+        if (window.__neuralNetworkCleanup === cleanup) {
+            delete window.__neuralNetworkCleanup;
         }
-    });
+    }
+
+    function onMouseOut(event) {
+        if (!event.relatedTarget) {
+            onMouseLeave();
+        }
+    }
 
     window.addEventListener("resize", resize);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseout", onMouseOut);
+    window.addEventListener("pagehide", cleanup, { once: true });
 
-    // 5. 启动动画
+    window.__neuralNetworkCleanup = cleanup;
+
     resize();
-    draw();
-
-    // 离开页面时停止动画
-    window.addEventListener("pagehide", () => {
-        cancelAnimationFrame(animationId);
-    }, { once: true });
+    draw(0);
 })();
