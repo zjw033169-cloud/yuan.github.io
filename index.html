@@ -571,28 +571,17 @@ loadArticle();
     </p>
 </footer>
     <script>
-async function loadVisitorCount() {
-    const counter = document.getElementById("site-counter");
-
-    try {
-const response = await fetch(
-    "https://yuan.goatcounter.com/counter/TOTAL.json?t=" + Date.now(),
-    { cache: "no-store" }
-);
-
-        if (!response.ok) {
-            throw new Error("统计数据加载失败");
-        }
-
-        const data = await response.json();
-        counter.textContent = data.count;
-    } catch (error) {
-        counter.textContent = "暂不可用";
-        console.error(error);
+(function waitForGoatCounter() {
+    if (window.goatcounter && window.goatcounter.visit_count) {
+        window.goatcounter.visit_count({
+            append: "#site-counter",
+            path: "TOTAL",
+            no_branding: true
+        });
+    } else {
+        setTimeout(waitForGoatCounter, 100);
     }
-}
-
-loadVisitorCount();
+})();
 </script>
 </body>
 </html>
