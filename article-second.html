@@ -43,6 +43,43 @@
             color: #6F8298;
             font-size: 13px;
         }
+        
+/* 仅用于这篇文章的背景图片 */
+body {
+    background-image:
+        linear-gradient(
+            rgba(220, 235, 255, 0.20),
+            rgba(220, 235, 255, 0.30)
+        ),
+        url("images/sakura-lake.jpg");
+
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #dceaff;
+}
+
+/* 让文章正文更清晰易读 */
+article {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 18px;
+    padding: 32px;
+}
+
+/* 手机端兼容 */
+@media (max-width: 600px) {
+    body {
+        background-attachment: scroll;
+    }
+
+    article {
+        padding: 22px;
+    }
+}
+
     </style>
 </head>
 <body>
