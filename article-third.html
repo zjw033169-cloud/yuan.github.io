@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="article-title" content="今日小感">
+    <title>今日小感 | A Quiet Corner</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            background: #EDF5FF;
+            color: #243B53;
+            font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+            line-height: 1.9;
+        }
+
+        article {
+            max-width: 760px;
+            margin: 30px auto;
+            padding: 30px;
+            border: 1px solid rgba(76, 131, 195, 0.2);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        h1, h2 {
+            color: #173B65;
+        }
+
+        a {
+            color: #4C83C3;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .date {
+            color: #6F8298;
+            font-size: 13px;
+        }
+        
+/* 仅用于这篇文章的背景图片 */
+body {
+    background-image:
+        linear-gradient(
+            rgba(220, 235, 255, 0.20),
+            rgba(220, 235, 255, 0.30)
+        ),
+        url("images/sakura-lake.png");
+
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-color: #dceaff;
+}
+
+/* 让文章正文更清晰易读 */
+article {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 18px;
+    padding: 32px;
+}
+
+/* 手机端兼容 */
+@media (max-width: 600px) {
+    body {
+        background-attachment: scroll;
+    }
+
+    article {
+        padding: 22px;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <article>
+        <a href="index.html">← 返回首页</a>
+
+        <h1>今日小感</h1>
+        <p class="date">2026年10月27日 · 随笔</p>
+
+        <p>
+我早就接受了不可能每一天是完美的，不可能人生永远是顺遂的。
+
+就像股市稍微一波动，就丧失了斗志，大喊大叫，如同惊弓之鸟。
+
+        </p>
+
+
+        <p>
+如果市场不景气、获利周期长、升值空间低。那么行事一定要更加谨慎，规划更有条理，而不是丧失希望。 丧失希望等价于宣告死亡，过于稳定的环境也意味着可以在温室中积蓄力量，量变产生质变（当然，这一切的实现都严格的取决于投资者。如果心理过于受到市场影响，那么这样不理智的投资者是完全不适合投资的，换言之是非常愚蠢的人。既然进入了市场，就要承担风险和周期，长周期也有好处）
+        </p>
+
+        <p>
+如果能够从日常的、频繁的、繁杂的事务中抽象出事物的特征、道理，才能摸清人生的走向、人生的轨迹。正如我们在大量信息的处理中首先需要去除无用的信息一样。大量的信息都是干扰，不仅无用且严重影响信息的真实性。
+然后才能真正进行简单的数据处理。
+
+        </p>
+
+
+        <p>
+生活、工作、以及人生的经验占主导的任何东西 都是在于信息、流程的熟悉程度。
+就像有的大公司即使是在当下领先的科技公司，仍然有很大的可能在未来被取代。
+这是因为公司的员工早已熟悉了流程。看上去高门槛的公司行业，有时可能只是在于其准入流程足够繁琐，挡住了一部分学习能力偏差、懒惰的人、亦或是（社交、平台）资源有限导致信息狭隘的人。当流程足够熟悉时没有创新，公司仍然会走向下坡。
+        </p>
+
+        <p>
+因此，如果不及时反思自己的行为，不能意识到自己在做什么，自己的情绪是什么，就相当于走上了自动驾驶，看上去我们仍然活着、有意识的选择自己的人生，实际上已经听天由命，用惯性的思维来决策变化的事物，就像用一成不变的决策进行投资，暴雷是早晚的事情。
+ </p>
+    </article>
+    
+<!-- Sakura Rain Effect -->
+<canvas id="sakura-rain" aria-hidden="true"></canvas>
+
+<style>
+  #sakura-rain {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #sakura-rain {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+(() => {
+  const canvas = document.getElementById("sakura-rain");
+  if (!canvas || window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  let width, height, petals = [];
+  let animationId;
+  let lastTime = 0;
+  const isMobile = window.innerWidth < 600;
+  const count = isMobile ? 22 : 48;
+  const colors = [
+    "#ffc6dc", "#ffb4d0", "#ffe0eb",
+    "#f7a8ca", "#fff0f5"
+  ];
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function createPetal(randomY = false) {
+    return {
+      x: Math.random() * width,
+      y: randomY ? Math.random() * height : -20,
+      size: 5 + Math.random() * 8,
+      speed: 0.5 + Math.random() * 1.2,
+      sway: Math.random() * Math.PI * 2,
+      swaySpeed: 0.008 + Math.random() * 0.018,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.035,
+      drift: (Math.random() - 0.5) * 0.6,
+      alpha: 0.55 + Math.random() * 0.4,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    };
+  }
+
+  function drawPetal(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rotation);
+
+    ctx.globalAlpha = p.alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.moveTo(0, -p.size);
+    ctx.bezierCurveTo(
+      p.size * 0.9, -p.size * 0.8,
+      p.size, p.size * 0.3,
+      0, p.size
+    );
+    ctx.bezierCurveTo(
+      -p.size, p.size * 0.3,
+      -p.size * 0.9, -p.size * 0.8,
+      0, -p.size
+    );
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function animate(time = 0) {
+    animationId = requestAnimationFrame(animate);
+
+    // 限制帧率，减少性能消耗
+    if (time - lastTime < 30) return;
+    lastTime = time;
+
+    ctx.clearRect(0, 0, width, height);
+
+    for (const p of petals) {
+      p.sway += p.swaySpeed * 2;
+      p.x += Math.sin(p.sway) * 0.7 + p.drift;
+      p.y += p.speed;
+      p.rotation += p.rotationSpeed;
+
+      // 从屏幕边缘循环出现
+      if (p.y > height + 20) {
+        Object.assign(p, createPetal(false));
+        p.x = Math.random() * width;
+      }
+      if (p.x < -30) p.x = width + 20;
+      if (p.x > width + 30) p.x = -20;
+
+      drawPetal(p);
+    }
+  }
+
+  resize();
+  petals = Array.from(
+    { length: count },
+    () => createPetal(true)
+  );
+
+  window.addEventListener("resize", resize);
+
+  // 页面进入后台时暂停动画
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animationId);
+    } else {
+      lastTime = 0;
+      animationId = requestAnimationFrame(animate);
+    }
+  });
+
+  animate();
+})();
+</script>
+
+</body>
+</html>
