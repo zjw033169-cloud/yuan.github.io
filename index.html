@@ -251,6 +251,159 @@
     #site-counter {
         font-weight: 600;
     }
+
+/* 文章区域布局 */
+.articles-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+
+.articles-description {
+  margin-top: -8px;
+  color: #71849a;
+  font-size: 14px;
+}
+
+.articles-total {
+  color: #7890aa;
+  font-size: 11px;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  padding-bottom: 10px;
+}
+
+.recent-articles {
+  display: grid;
+  gap: 14px;
+}
+
+.article-card {
+  display: block;
+  padding: 22px 24px;
+  border: 1px solid rgba(111, 148, 183, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.42);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.25s, border-color 0.25s,
+              background 0.25s;
+}
+
+.article-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(75, 125, 180, 0.5);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.article-card .date {
+  display: block;
+  margin-bottom: 10px;
+  color: #7189a3;
+  font-size: 12px;
+}
+
+.article-card h3 {
+  margin: 0 0 9px;
+  color: #294765;
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.article-card p {
+  margin: 0;
+  color: #647b92;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.archive-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 22px;
+  padding: 17px 4px;
+  border: none;
+  border-top: 1px solid rgba(111, 148, 183, 0.25);
+  background: transparent;
+  color: #466786;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.archive-toggle:hover {
+  color: #234d78;
+}
+
+.archive-toggle #archiveIcon {
+  font-size: 22px;
+}
+
+.archive-panel {
+  padding: 10px 0 4px;
+  animation: archiveFadeIn 0.25s ease;
+}
+
+.archive-heading {
+  margin-bottom: 14px;
+  color: #8297ac;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.archive-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 15px 4px;
+  border-bottom: 1px solid rgba(111, 148, 183, 0.15);
+  color: #385773;
+  text-decoration: none;
+}
+
+.archive-item:hover {
+  color: #1b5487;
+}
+
+.archive-item time {
+  color: #8799aa;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+@keyframes archiveFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .articles-heading {
+    align-items: flex-start;
+  }
+
+  .article-card {
+    padding: 18px;
+  }
+
+  .archive-item {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
+        
 </style>
 </head>
     
@@ -327,31 +480,43 @@ loadArticle();
             </div>
         </section>
 
-        <section id="articles">
-            <div class="section-label">NOTES & IDEAS</div>
-            <h2>最近的文章</h2>
-            
-<a class="article" href="article-python.html">
+       
+<section id="articles">
+  <div class="section-label">NOTES & IDEAS</div>
 
-    <h3 id="python-title">从 Python 开始理解数据</h3>
-    <p id="python-summary">
-        学习使用 Python 处理表格、分析数据，并通过图表发现规律。
-    </p>
-</a>
+  <div class="articles-heading">
+    <div>
+      <h2>最近的文章</h2>
+      <p class="articles-description">
+        Recent thoughts, quietly collected.
+      </p>
+    </div>
+    <span class="articles-total" id="articlesTotal">03 POSTS</span>
+  </div>
 
-<a class="article" href="article-second.html">
-    <span class="date">2026.10.27 · 随笔</span>
-    <h3>今日小感</h3>
+  <!-- 自动显示最新三篇文章 -->
+  <div id="recentArticles" class="recent-articles">
+    <p>正在加载文章……</p>
+  </div>
 
-</a>
+  <!-- 展开或收起文章档案 -->
+  <button
+    type="button"
+    id="archiveToggle"
+    class="archive-toggle"
+    aria-expanded="false"
+    aria-controls="archivePanel"
+  >
+    <span id="archiveText">浏览全部文章</span>
+    <span id="archiveIcon">＋</span>
+  </button>
 
-  <a class="article" href="article-third.html">
-    <span class="date">2026.10.28 · 随笔</span>
-    <h3>到底在伪装些什么</h3>
+  <div id="archivePanel" class="archive-panel" hidden>
+    <div class="archive-heading">ARTICLE ARCHIVE</div>
+    <div id="allArticles"></div>
+  </div>
+</section>
 
-</a>
-         
-        </section>
 
         <section id="contact">
             <div class="section-label">SAY HELLO</div>
@@ -574,5 +739,102 @@ async function loadArticle() {
 loadArticle();
 
 </script>
+
+    
+<script>
+(async function () {
+  const recentContainer = document.getElementById("recentArticles");
+  const archiveContainer = document.getElementById("allArticles");
+  const totalElement = document.getElementById("articlesTotal");
+  const toggleButton = document.getElementById("archiveToggle");
+  const archivePanel = document.getElementById("archivePanel");
+  const archiveText = document.getElementById("archiveText");
+  const archiveIcon = document.getElementById("archiveIcon");
+
+  if (!recentContainer || !archiveContainer) return;
+
+  try {
+    const response = await fetch("./articles.json");
+
+    if (!response.ok) {
+      throw new Error("无法读取 articles.json");
+    }
+
+    const articles = await response.json();
+
+    // 日期从新到旧排序
+    articles.sort((a, b) => b.date.localeCompare(a.date));
+
+    // HTML 转义，避免文章信息被当成 HTML 执行
+    function escapeHTML(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function makeCard(article) {
+      const url = String(article.url || "");
+      const safeUrl = escapeHTML(url);
+
+      return `
+        <a class="article-card" href="${safeUrl}">
+          <span class="date">
+            ${escapeHTML(article.date)} · ${escapeHTML(article.category)}
+          </span>
+          <h3>${escapeHTML(article.title)}</h3>
+          <p>${escapeHTML(article.summary)}</p>
+        </a>
+      `;
+    }
+
+    function makeArchiveItem(article) {
+      return `
+        <a class="archive-item" href="${escapeHTML(article.url)}">
+          <span>${escapeHTML(article.title)}</span>
+          <time>${escapeHTML(article.date)}</time>
+        </a>
+      `;
+    }
+
+    // 首页只显示最新三篇
+    recentContainer.innerHTML = articles
+      .slice(0, 3)
+      .map(makeCard)
+      .join("");
+
+    // 档案列出全部文章
+    archiveContainer.innerHTML = articles
+      .map(makeArchiveItem)
+      .join("");
+
+    totalElement.textContent =
+      String(articles.length).padStart(2, "0") + " POSTS";
+
+    if (articles.length === 0) {
+      recentContainer.innerHTML = "<p>还没有发布文章。</p>";
+    }
+
+  } catch (error) {
+    console.error("文章加载失败：", error);
+    recentContainer.innerHTML =
+      '<p>文章暂时无法加载，请检查 articles.json 文件。</p>';
+  }
+
+  // 档案展开 / 收起
+  toggleButton.addEventListener("click", function () {
+    const opening = archivePanel.hidden;
+
+    archivePanel.hidden = !opening;
+    toggleButton.setAttribute("aria-expanded", String(opening));
+    archiveText.textContent = opening ? "收起文章档案" : "浏览全部文章";
+    archiveIcon.textContent = opening ? "−" : "＋";
+  });
+})();
+</script>
+
 </body>
 </html>
