@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -125,6 +124,11 @@ a:hover {
     background: #3f536a;
 }
 
+.unlock-button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+
 #message {
     min-height: 24px;
     margin-top: 12px;
@@ -196,13 +200,13 @@ a:hover {
                 required
             >
 
-            <button class="unlock-button" type="submit">
+            <button class="unlock-button" id="unlock-button" type="submit">
                 解锁文章
             </button>
 
         </form>
 
-        <div id="message" role="status"></div>
+        <div id="message" role="status" aria-live="polite"></div>
 
     </section>
 
@@ -210,11 +214,21 @@ a:hover {
 
 </article>
 
-<!-- 加密数据：已经放入你的完整密文 -->
-<script type="application/json"
+<!-- 加密数据 -->
+<script type="application/json" id="encrypted-data">
+{
+  "v": 1,
+  "iterations": 310000,
+  "salt": "mbuwFXt4c7QEzQCaewbOsg==",
+  "iv": "sbTBYspuT08HuTqy",
+  "data": "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"
+}
+</script>
 
 <!-- AES-256-GCM 解密程序 -->
 <script>
+"use strict";
+
 function base64ToBytes(base64) {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
@@ -237,7 +251,7 @@ async function deriveKey(password, salt, iterations) {
         ["deriveKey"]
     );
 
-    return await crypto.subtle.deriveKey(
+    return crypto.subtle.deriveKey(
         {
             name: "PBKDF2",
             salt: salt,
@@ -254,78 +268,89 @@ async function deriveKey(password, salt, iterations) {
     );
 }
 
-document.getElementById("unlock-form").addEventListener(
-    "submit",
-    async function(event) {
-        event.preventDefault();
+document.getElementById("unlock-form").addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-        const passwordInput = document.getElementById("password");
-        const message = document.getElementById("message");
-        const password = passwordInput.value;
+    const passwordInput = document.getElementById("password");
+    const message = document.getElementById("message");
+    const button = document.getElementById("unlock-button");
+    const password = passwordInput.value;
 
-        message.textContent = "";
+    message.textContent = "";
+    button.disabled = true;
+    button.textContent = "正在解锁…";
 
-        if (!window.isSecureContext || !crypto.subtle) {
-            message.textContent =
-                "当前环境不支持安全解密，请通过 HTTPS 访问。";
-            return;
-        }
-
-        try {
-            const payload = JSON.parse(
-                document.getElementById("encrypted-data").textContent
-            );
-
-            if (
-                payload.v !== 1 ||
-                !Number.isInteger(payload.iterations)
-            ) {
-                throw new Error("加密数据格式不正确");
-            }
-
-            const salt = base64ToBytes(payload.salt);
-            const iv = base64ToBytes(payload.iv);
-            const encryptedData = base64ToBytes(payload.data);
-
-            if (salt.length !== 16 || iv.length !== 12) {
-                throw new Error("加密数据不完整");
-            }
-
-            const key = await deriveKey(
-                password,
-                salt,
-                payload.iterations
-            );
-
-            const decrypted = await crypto.subtle.decrypt(
-                {
-                    name: "AES-GCM",
-                    iv: iv
-                },
-                key,
-                encryptedData
-            );
-
-            const html = new TextDecoder().decode(decrypted);
-
-            const articleContent =
-                document.getElementById("article-content");
-
-            articleContent.innerHTML = html;
-            articleContent.style.display = "block";
-
-            document.getElementById("lock-panel").style.display = "none";
-            passwordInput.value = "";
-
-        } catch (error) {
-            console.error("解密错误：", error);
-            passwordInput.value = "";
-
-            message.textContent =
-                "解密失败。请检查密码是否正确，或密文是否完整。";
-        }
+    if (!window.isSecureContext || !window.crypto || !crypto.subtle) {
+        message.textContent = "当前环境不支持安全解密，请通过 HTTPS 访问。";
+        button.disabled = false;
+        button.textContent = "解锁文章";
+        return;
     }
-);
+
+    try {
+        const dataElement = document.getElementById("encrypted-data");
+
+        if (!dataElement) {
+            throw new Error("找不到加密数据区域，请检查 encrypted-data 标签。");
+        }
+
+        const payload = JSON.parse(dataElement.textContent);
+
+        if (
+            payload.v !== 1 ||
+            !Number.isInteger(payload.iterations) ||
+            typeof payload.salt !== "string" ||
+            typeof payload.iv !== "string" ||
+            typeof payload.data !== "string"
+        ) {
+            throw new Error("加密数据格式不正确或不完整。");
+        }
+
+        const salt = base64ToBytes(payload.salt);
+        const iv = base64ToBytes(payload.iv);
+        const encryptedData = base64ToBytes(payload.data);
+
+        if (salt.length !== 16 || iv.length !== 12 || encryptedData.length <= 16) {
+            throw new Error("加密数据长度异常，请重新复制完整密文。");
+        }
+
+        const key = await deriveKey(password, salt, payload.iterations);
+
+        const decrypted = await crypto.subtle.decrypt(
+            {
+                name: "AES-GCM",
+                iv: iv
+            },
+            key,
+            encryptedData
+        );
+
+        const html = new TextDecoder("utf-8", { fatal: true }).decode(decrypted);
+
+        const articleContent = document.getElementById("article-content");
+        articleContent.innerHTML = html;
+        articleContent.style.display = "block";
+
+        document.getElementById("lock-panel").style.display = "none";
+        passwordInput.value = "";
+
+    } catch (error) {
+        console.error("解密错误：", error);
+        passwordInput.value = "";
+
+        if (error.name === "OperationError") {
+            message.textContent = "解密失败：密码不匹配，或密文内容被修改。请确认使用的是本次加密时的密码。";
+        } else if (error instanceof SyntaxError) {
+            message.textContent = "解密失败：密文 JSON 格式错误，请检查密文区域。";
+        } else {
+            message.textContent = "解密失败：" + (error.message || error.name || "未知错误");
+        }
+
+    } finally {
+        button.disabled = false;
+        button.textContent = "解锁文章";
+    }
+});
 </script>
 
 <!-- 动态星球背景 -->
@@ -373,8 +398,7 @@ document.getElementById("unlock-form").addEventListener(
 
     function drawStars(time) {
         for (const s of stars) {
-            const twinkle =
-                0.72 + 0.28 * Math.sin(time * 0.001 + s.phase);
+            const twinkle = 0.72 + 0.28 * Math.sin(time * 0.001 + s.phase);
 
             ctx.beginPath();
             ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
