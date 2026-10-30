@@ -1,0 +1,323 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文章加密工具 | A Quiet Corner</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 40px 18px;
+    background: #EDF5FF;
+    color: #173B65;
+    font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+.container {
+    max-width: 760px;
+    margin: auto;
+    padding: 30px;
+    background: #F8FBFF;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(50, 90, 130, 0.08);
+}
+
+h1 {
+    margin-top: 0;
+}
+
+p {
+    line-height: 1.8;
+    color: #56718D;
+}
+
+label {
+    display: block;
+    margin: 20px 0 8px;
+    font-weight: bold;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #C9DCEC;
+    border-radius: 9px;
+    background: white;
+    color: #173B65;
+    font-size: 15px;
+}
+
+textarea {
+    min-height: 260px;
+    resize: vertical;
+    line-height: 1.7;
+}
+
+button {
+    margin-top: 20px;
+    padding: 13px 22px;
+    border: none;
+    border-radius: 9px;
+    background: #4C83C3;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+#result {
+    min-height: 180px;
+    margin-top: 15px;
+}
+
+#status {
+    margin-top: 15px;
+    color: #28734A;
+    white-space: pre-wrap;
+}
+
+.note {
+    font-size: 13px;
+    color: #71869C;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>A Quiet Corner.</h1>
+    <p>私人文章加密工具</p>
+
+    <p>
+        使用 AES-256-GCM 对文章正文进行加密。
+        加密过程在当前浏览器中完成，不会上传文章原文。
+    </p>
+
+    <form id="encryptForm">
+
+        <label for="content">文章正文（支持 HTML）</label>
+        <textarea
+            id="content"
+            placeholder="在这里粘贴文章正文，可以包含 HTML 格式……"
+            required
+        ></textarea>
+
+        <label for="password">设置文章密码</label>
+        <input
+            id="password"
+            type="password"
+            autocomplete="new-password"
+            placeholder="建议使用至少 12 位的密码"
+            required
+        >
+
+        <label for="confirmPassword">再次输入密码</label>
+        <input
+            id="confirmPassword"
+            type="password"
+            autocomplete="new-password"
+            placeholder="确认密码"
+            required
+        >
+
+        <button type="submit">开始 AES 加密</button>
+
+    </form>
+
+    <label for="result">加密结果</label>
+
+    <textarea
+        id="result"
+        readonly
+        placeholder="加密完成后，密文会显示在这里。"
+    ></textarea>
+
+    <button id="copyButton" type="button">
+        复制加密结果
+    </button>
+
+    <div id="status"></div>
+
+    <p class="note">
+        请妥善保存密码。密码丢失后，无法通过本工具恢复文章。
+    </p>
+
+</div>
+
+<script>
+const ITERATIONS = 310000;
+
+function bytesToBase64(bytes) {
+    let binary = "";
+
+    for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+
+    return btoa(binary);
+}
+
+async function deriveKey(password, salt) {
+
+    const passwordBytes = new TextEncoder().encode(password);
+
+    const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        passwordBytes,
+        "PBKDF2",
+        false,
+        ["deriveKey"]
+    );
+
+    return await crypto.subtle.deriveKey(
+        {
+            name: "PBKDF2",
+            salt: salt,
+            iterations: ITERATIONS,
+            hash: "SHA-256"
+        },
+        keyMaterial,
+        {
+            name: "AES-GCM",
+            length: 256
+        },
+        false,
+        ["encrypt"]
+    );
+}
+
+document.getElementById("encryptForm")
+.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const content =
+        document.getElementById("content").value;
+
+    const password =
+        document.getElementById("password").value;
+
+    const confirmPassword =
+        document.getElementById("confirmPassword").value;
+
+    const status =
+        document.getElementById("status");
+
+    const result =
+        document.getElementById("result");
+
+    result.value = "";
+    status.textContent = "";
+
+    if (!window.isSecureContext || !crypto.subtle) {
+        status.textContent =
+            "当前环境不支持安全加密，请使用 HTTPS 地址打开此页面。";
+        return;
+    }
+
+    if (password.length < 12) {
+        status.textContent =
+            "密码至少需要 12 个字符，建议使用大小写字母、数字和符号组合。";
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        status.textContent = "两次输入的密码不一致。";
+        return;
+    }
+
+    try {
+
+        status.textContent = "正在加密，请稍候……";
+
+        const salt = crypto.getRandomValues(
+            new Uint8Array(16)
+        );
+
+        const iv = crypto.getRandomValues(
+            new Uint8Array(12)
+        );
+
+        const key = await deriveKey(password, salt);
+
+        const encrypted = await crypto.subtle.encrypt(
+            {
+                name: "AES-GCM",
+                iv: iv
+            },
+            key,
+            new TextEncoder().encode(content)
+        );
+
+        const payload = {
+            v: 1,
+            iterations: ITERATIONS,
+            salt: bytesToBase64(salt),
+            iv: bytesToBase64(iv),
+            data: bytesToBase64(
+                new Uint8Array(encrypted)
+            )
+        };
+
+        result.value = JSON.stringify(payload);
+
+        status.textContent =
+            "加密成功！请复制上面的密文，放入加密文章页面。";
+
+        // 清除密码输入框
+        document.getElementById("password").value = "";
+        document.getElementById("confirmPassword").value = "";
+
+    } catch (error) {
+
+        console.error(error);
+
+        status.textContent =
+            "加密失败，请检查浏览器是否支持 Web Crypto。";
+
+    }
+
+});
+
+document.getElementById("copyButton")
+.addEventListener("click", async function() {
+
+    const result = document.getElementById("result");
+    const status = document.getElementById("status");
+
+    if (!result.value) {
+        status.textContent = "请先完成加密。";
+        return;
+    }
+
+    try {
+
+        await navigator.clipboard.writeText(result.value);
+        status.textContent = "密文已复制。";
+
+    } catch (error) {
+
+        result.focus();
+        result.select();
+
+        status.textContent =
+            "已选中密文，请按 Ctrl+C 复制。";
+
+    }
+
+});
+</script>
+
+</body>
+</html>
