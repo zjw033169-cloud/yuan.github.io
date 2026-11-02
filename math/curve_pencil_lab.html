@@ -59,7 +59,24 @@ const status=document.getElementById('status'),equation=document.getElementById(
 const legend=document.getElementById('legend'),presets=document.getElementById('presets'),note=document.getElementById('note');
 const W=canvas.width,H=canvas.height,xmin=-4.5,xmax=6.5,ymin=-4.5,ymax=4.5;
 const sx=x=>(x-xmin)/(xmax-xmin)*W,sy=y=>H-(y-ymin)/(ymax-ymin)*H;
-let kind='circles';
+
+// 【新增】计算两圆交点函数
+function getCircleIntersections(x1,y1,r1,x2,y2,r2){
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const d = Math.hypot(dx, dy);
+  if(d > r1 + r2 || d < Math.abs(r1 - r2) || d < 1e-9) return null;
+  const a = (r1*r1 - r2*r2 + d*d) / (2*d);
+  const h = Math.sqrt(r1*r1 - a*a);
+  const xm = x1 + a * dx / d;
+  const ym = y1 + a * dy / d;
+  const rx = -dy * (h / d);
+  const ry = dx * (h / d);
+  const p1 = {x: xm + rx, y: ym + ry};
+  const p2 = {x: xm - rx, y: ym - ry};
+  return [p1, p2];
+}
+
 function seg(x1,y1,x2,y2,color,width=2,dash=[]){
  ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
  ctx.moveTo(sx(x1),sy(y1));ctx.lineTo(sx(x2),sy(y2));ctx.stroke();ctx.setLineDash([]);
@@ -89,13 +106,23 @@ function setLegend(items){legend.innerHTML=items.map(([c,t])=>`<span><i class="d
 function setPresets(items){presets.innerHTML='';items.forEach(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{slider.value=v;draw()};presets.appendChild(b)})}
 function drawCircles(l){
  // C1: x²+y²-4=0; C2: (x-2)²+y²-4=0
- circle(0,0,2,'#2878bd',3);circle(2,0,2,'#e58b35',3);
+ const c1x=0,c1y=0,c1r=2;
+ const c2x=2,c2y=0,c2r=2;
+ circle(c1x,c1y,c1r,'#2878bd',3);
+ circle(c2x,c2y,c2r,'#e58b35',3);
+ const pts = getCircleIntersections(c1x,c1y,c1r,c2x,c2y,c2r);
+
  if(Math.abs(l+1)<0.012)seg(1,ymin,1,ymax,'#29966f',4);
  else{
   const den=1+l,cx=2*l/den,r2=cx*cx+4/den;
   if(r2>=0&&Number.isFinite(r2)){const r=Math.sqrt(r2);if(r<100)circle(cx,0,r,'#29966f',4)}
  }
- const h=Math.sqrt(3);dot(1,h,'A');dot(1,-h,'B',9,22);
+ // 自动绘制交点A、B
+ if(pts){
+   dot(pts[0].x, pts[0].y, 'A');
+   dot(pts[1].x, pts[1].y, 'B',9,22);
+ }
+
  if(Math.abs(l+1)<0.012){
   status.innerHTML='<b style="color:#21815f">λ = −1：二次项相消，曲线束退化为公共弦所在直线。</b>';
   equation.textContent='C₁ − C₂ = 0  ⇔  −4x + 4 = 0  ⇔  x = 1';
