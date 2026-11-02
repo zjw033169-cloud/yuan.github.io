@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>曲线束交互实验室</title>
+<title>曲线束交互实验室（等比例正交坐标系）</title>
 <style>
 :root{--ink:#18324b;--blue:#2878bd;--orange:#e58b35;--green:#29966f}
 *{box-sizing:border-box}
@@ -33,14 +33,14 @@ button:hover{background:#eaf3fb}
 <body>
 <main>
 <h1>曲线束交互实验室</h1>
-<p class="intro">切换不同的曲线组合，拖动 λ，观察公共点如何保持不变，以及曲线束在特殊参数下如何退化。</p>
+<p class="intro">等比例正交坐标系，网格为正方形，圆不会拉伸变形，公共交点精准对齐。</p>
 <section class="panel">
  <div class="tabs">
   <button class="tab active" data-kind="circles">两圆曲线束</button>
   <button class="tab" data-kind="lines">两直线曲线束</button>
   <button class="tab" data-kind="linecircle">直线与圆的曲线束</button>
  </div>
- <canvas id="plot" width="900" height="620"></canvas>
+ <canvas id="plot" width="1200" height="820"></canvas>
  <div class="legend" id="legend"></div>
  <div class="controls">
   <div><label for="lambda"><strong>参数 λ</strong></label><input id="lambda" type="range" min="-4" max="4" step="0.01" value="0.8"></div>
@@ -52,157 +52,255 @@ button:hover{background:#eaf3fb}
 <p class="note" id="note"></p>
 </main>
 <script>
-(()=>{
-const canvas=document.getElementById('plot'),ctx=canvas.getContext('2d');
-const slider=document.getElementById('lambda'),value=document.getElementById('value');
-const status=document.getElementById('status'),equation=document.getElementById('equation');
-const legend=document.getElementById('legend'),presets=document.getElementById('presets'),note=document.getElementById('note');
-const W=canvas.width,H=canvas.height,xmin=-4.5,xmax=6.5,ymin=-4.5,ymax=4.5;
-const sx=x=>(x-xmin)/(xmax-xmin)*W,sy=y=>H-(y-ymin)/(ymax-ymin)*H;
+(() => {
+  const canvas = document.getElementById('plot');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
 
-// 计算两圆交点
-function getCircleIntersections(x1,y1,r1,x2,y2,r2){
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  const d = Math.hypot(dx, dy);
-  if(d > r1 + r2 || d < Math.abs(r1 - r2) || d < 1e-9) return null;
-  const a = (r1*r1 - r2*r2 + d*d) / (2*d);
-  const h = Math.sqrt(r1*r1 - a*a);
-  const xm = x1 + a * dx / d;
-  const ym = y1 + a * dy / d;
-  const rx = -dy * (h / d);
-  const ry = dx * (h / d);
-  const p1 = {x: xm + rx, y: ym + ry};
-  const p2 = {x: xm - rx, y: ym - ry};
-  return [p1, p2];
-}
+  const slider = document.getElementById('lambda');
+  const value = document.getElementById('value');
+  const status = document.getElementById('status');
+  const equation = document.getElementById('equation');
+  const legend = document.getElementById('legend');
+  const presets = document.getElementById('presets');
+  const note = document.getElementById('note');
 
-function seg(x1,y1,x2,y2,color,width=2,dash=[]){
- ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
- ctx.moveTo(sx(x1),sy(y1));ctx.lineTo(sx(x2),sy(y2));ctx.stroke();ctx.setLineDash([]);
-}
+  // 数学坐标范围
+  const xMin = -4.5;
+  const xMax = 6.5;
+  const yMin = -4.5;
+  const yMax = 4.5;
 
-// 修复circle函数：每次强制 beginPath
-function circle(cx,cy,r,color,width=2){
- if(!Number.isFinite(r)||r<0)return;
- ctx.beginPath();
- ctx.strokeStyle=color;
- ctx.lineWidth=width;
- ctx.arc(sx(cx),sy(cy),r*W/(xmax-xmin),0,Math.PI*2);
- ctx.stroke();
-}
+  // 统一缩放系数，保证 x、y 单位像素相等（正方形网格）
+  const rangeX = xMax - xMin;
+  const rangeY = yMax - yMin;
+  const scale = Math.min(W / rangeX, H / rangeY);
+  // 居中偏移
+  const offsetX = (W - scale * rangeX) / 2;
+  const offsetY = (H - scale * rangeY) / 2;
 
-// 修改dot：白色外圈+黑色圆心，中心点严格对准数学坐标，视觉上精准卡在交点
-function dot(x,y,label,dx=9,dy=-9){
-  const px = sx(x);
-  const py = sy(y);
-  // 白色外圈
-  ctx.beginPath();
-  ctx.fillStyle='#ffffff';
-  ctx.arc(px,py,7,0,Math.PI*2);
-  ctx.fill();
-  // 黑色中心点
-  ctx.beginPath();
-  ctx.fillStyle='#173b58';
-  ctx.arc(px,py,4.5,0,Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle='#173b58';
-  ctx.font='bold 16px system-ui';
-  ctx.fillText(label,px+dx,py+dy);
-}
-
-function axes(){
- ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
- for(let x=Math.ceil(xmin);x<=xmax;x++){
-  seg(x,ymin,x,ymax,x===0?'#8095a8':'#e8eef3',x===0?2:1);
-  if(x!==0){ctx.fillStyle='#72869a';ctx.font='13px system-ui';ctx.fillText(x,sx(x)-4,sy(0)+18);}
- }
- for(let y=Math.ceil(ymin);y<=ymax;y++){
-  seg(xmin,y,xmax,y,y===0?'#8095a8':'#e8eef3',y===0?2:1);
-  if(y!==0){ctx.fillStyle='#72869a';ctx.font='13px system-ui';ctx.fillText(y,sx(0)+8,sy(y)+4);}
- }
- ctx.fillStyle='#526b80';ctx.font='15px system-ui';ctx.fillText('x',W-24,sy(0)-10);ctx.fillText('y',sx(0)+10,20);
-}
-function setLegend(items){legend.innerHTML=items.map(([c,t])=>`<span><i class="dot" style="background:${c}"></i>${t}</span>`).join('')}
-function setPresets(items){presets.innerHTML='';items.forEach(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{slider.value=v;draw()};presets.appendChild(b)})}
-
-function drawCircles(l){
- const c1x=0,c1y=0,c1r=2;
- const c2x=2,c2y=0,c2r=2;
- circle(c1x,c1y,c1r,'#2878bd',2);
- circle(c2x,c2y,c2r,'#e58b35',2);
- const pts = getCircleIntersections(c1x,c1y,c1r,c2x,c2y,c2r);
-
- if(Math.abs(l+1)<0.012){
-  seg(1,ymin,1,ymax,'#29966f',3);
- }else{
-  const den=1+l,cx=2*l/den,r2=cx*cx+4/den;
-  if(r2>=0&&Number.isFinite(r2)){
-    const r=Math.sqrt(r2);
-    if(r<100) circle(cx,0,r,'#29966f',3)
+  // 坐标转换函数：数学(x,y) → canvas像素
+  function sx(x) {
+    return offsetX + (x - xMin) * scale;
   }
- }
- // 最后画点，置顶
- if(pts){
-   dot(pts[0].x, pts[0].y, 'A');
-   dot(pts[1].x, pts[1].y, 'B',9,22);
- }
+  function sy(y) {
+    return offsetY + (yMax - y) * scale;
+  }
 
- if(Math.abs(l+1)<0.012){
-  status.innerHTML='<b style="color:#21815f">λ = −1：二次项相消，曲线束退化为公共弦所在直线。</b>';
-  equation.textContent='C₁ − C₂ = 0  ⇔  −4x + 4 = 0  ⇔  x = 1';
- }else{
-  status.textContent='绿色曲线是当前曲线束成员。它始终经过固定的 A、B 两点；改变 λ，圆心和半径随之改变。';
-  equation.textContent='C₁ + λC₂ = 0： (1 + λ)(x² + y²) − 4λx − 4 = 0';
- }
-}
-function drawLines(l){
- seg(xmin,xmin,xmax,xmax,'#2878bd',2);
- seg(xmin,-xmin,xmax,-xmax,'#e58b35',2);
- const a=l-1,b=l+1;
- const dx=b,dy=-a,n=Math.hypot(dx,dy)||1;
- const scale=20/n;
- seg(-dx*scale,-dy*scale,dx*scale,dy*scale,'#29966f',3);
- dot(0,0,'P',10,-10);
- status.textContent='三条直线都经过固定交点 P(0,0)。绿色直线随 λ 改变方向，形成以 P 为中心的直线束。';
- equation.textContent='L₁ + λL₂ = 0： (y − x) + λ(y + x) = 0，即 (λ − 1)x + (λ + 1)y = 0';
-}
-function drawLineCircle(l){
- seg(xmin,0,xmax,0,'#2878bd',2);
- circle(0,0,2,'#e58b35',2);
- if(Math.abs(l)<0.012)seg(xmin,0,xmax,0,'#29966f',3);
- else{
-  const cy=-1/(2*l),r=Math.sqrt(4+1/(4*l*l));
-  circle(0,cy,r,'#29966f',3);
- }
- dot(-2,0,'A',-20,-12);dot(2,0,'B',9,-12);
- if(Math.abs(l)<0.012){
-  status.innerHTML='<b style="color:#21815f">λ = 0：曲线束成员退化为原直线 y = 0。</b>';
-  equation.textContent='L + 0·C = 0  ⇔  y = 0';
- }else{
-  status.textContent='绿色曲线是一个经过固定 A、B 两点的圆。λ 越接近 0，圆的半径越大；λ = 0 时退化为原直线。';
-  equation.textContent='L + λC = 0： y + λ(x² + y² − 4) = 0';
- }
-}
-function draw(){
- const l=Number(slider.value);value.textContent='λ = '+l.toFixed(2);axes();
- if(kind==='circles')drawCircles(l);
- if(kind==='lines')drawLines(l);
- if(kind==='linecircle')drawLineCircle(l);
-}
-const configs={
- circles:{min:-4,max:4,step:.01,v:.8,legend:[['#2878bd','圆 C₁'],['#e58b35','圆 C₂'],['#29966f','曲线束成员'],['#173b58','固定公共点 A、B']],presets:[[-2,'λ = −2'],[-1,'λ = −1（公共弦）'],[0,'λ = 0（C₁）'],[1,'λ = 1'],[2,'λ = 2']],note:'两圆：C₁：x² + y² − 4 = 0；C₂：(x − 2)² + y² − 4 = 0。公共点 A(1,√3)、B(1,−√3)。曲线束 C₁ + λC₂ = 0；λ = −1 时二次项消失，得到公共弦直线 x = 1。'},
- lines:{min:-4,max:4,step:.01,v:.8,legend:[['#2878bd','直线 L₁'],['#e58b35','直线 L₂'],['#29966f','曲线束成员'],['#173b58','固定交点 P']],presets:[[-2,'λ = −2'],[-1,'λ = −1（x = 0）'],[0,'λ = 0（L₁）'],[1,'λ = 1（y = 0）'],[2,'λ = 2']],note:'两直线：L₁：y − x = 0；L₂：y + x = 0。它们交于 P(0,0)。曲线束 L₁ + λL₂ = 0 中，每个成员都是经过 P 的直线。'},
- linecircle:{min:-3,max:3,step:.01,v:.8,legend:[['#2878bd','直线 L'],['#e58b35','圆 C'],['#29966f','曲线束成员'],['#173b58','固定交点 A、B']],presets:[[-2,'λ = −2'],[-1,'λ = −1'],[0,'λ = 0（原直线）'],[1,'λ = 1'],[2,'λ = 2']],note:'直线：L：y = 0；圆：C：x² + y² − 4 = 0。交点 A(−2,0)、B(2,0)。曲线束 L + λC = 0；λ ≠ 0 时为经过 A、B 的圆，λ = 0 时退化为原直线。'}
-};
-let kind='circles';
-function select(k){
- kind=k;const c=configs[k];slider.min=c.min;slider.max=c.max;slider.step=c.step;slider.value=c.v;
- setLegend(c.legend);setPresets(c.presets);note.textContent=c.note;
- document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.kind===k));draw();
-}
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>select(b.dataset.kind)));
-slider.addEventListener('input',draw);select('circles');
+  function getCircleIntersections(x1, y1, r1, x2, y2, r2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const d = Math.hypot(dx, dy);
+    if (d > r1 + r2 || d < Math.abs(r1 - r2) || d < 1e-9) return null;
+    const a = (r1 * r1 - r2 * r2 + d * d) / (2 * d);
+    const h = Math.sqrt(r1 * r1 - a * a);
+    const xm = x1 + (a * dx) / d;
+    const ym = y1 + (a * dy) / d;
+    const rx = (-dy * h) / d;
+    const ry = (dx * h) / d;
+    return [
+      { x: xm + rx, y: ym + ry },
+      { x: xm - rx, y: ym - ry }
+    ];
+  }
+
+  function seg(x1, y1, x2, y2, color, width = 2, dash = []) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash);
+    ctx.moveTo(sx(x1), sy(y1));
+    ctx.lineTo(sx(x2), sy(y2));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function plotCircle(cx, cy, r, color, width = 2) {
+    if (!Number.isFinite(r) || r < 0) return;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    const steps = 600;
+    for (let i = 0; i <= steps; i++) {
+      const t = (i / steps) * Math.PI * 2;
+      const x = cx + r * Math.cos(t);
+      const y = cy + r * Math.sin(t);
+      if (i === 0) ctx.moveTo(sx(x), sy(y));
+      else ctx.lineTo(sx(x), sy(y));
+    }
+    ctx.stroke();
+  }
+
+  function dot(x, y, label, dx = 9, dy = -9) {
+    const px = sx(x);
+    const py = sy(y);
+    ctx.beginPath();
+    ctx.fillStyle = '#ffffff';
+    ctx.arc(px, py, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.fillStyle = '#173b58';
+    ctx.arc(px, py, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#173b58';
+    ctx.font = 'bold 16px system-ui';
+    ctx.fillText(label, px + dx, py + dy);
+  }
+
+  function axes() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    // 网格
+    for (let x = Math.ceil(xMin); x <= xMax; x++) {
+      seg(x, yMin, x, yMax, x === 0 ? '#8095a8' : '#e8eef3', x === 0 ? 2 : 1);
+      if (x !== 0) {
+        ctx.fillStyle = '#72869a';
+        ctx.font = '13px system-ui';
+        ctx.fillText(x, sx(x) - 4, sy(0) + 18);
+      }
+    }
+    for (let y = Math.ceil(yMin); y <= yMax; y++) {
+      seg(xMin, y, xMax, y, y === 0 ? '#8095a8' : '#e8eef3', y === 0 ? 2 : 1);
+      if (y !== 0) {
+        ctx.fillStyle = '#72869a';
+        ctx.font = '13px system-ui';
+        ctx.fillText(y, sx(0) + 8, sy(y) + 4);
+      }
+    }
+    ctx.fillStyle = '#526b80';
+    ctx.font = '15px system-ui';
+    ctx.fillText('x', sx(xMax) - 24, sy(0) - 10);
+    ctx.fillText('y', sx(0) + 8, sy(yMax) + 20);
+  }
+
+  function setLegend(items) {
+    legend.innerHTML = items.map(([c, t]) => `<span><i class="dot" style="background:${c}"></i>${t}</span>`).join('');
+  }
+  function setPresets(items) {
+    presets.innerHTML = '';
+    items.forEach(([v, t]) => {
+      const b = document.createElement('button');
+      b.textContent = t;
+      b.onclick = () => { slider.value = v; draw(); };
+      presets.appendChild(b);
+    });
+  }
+
+  function drawCircles(l) {
+    const c1x = 0, c1y = 0, c1r = 2;
+    const c2x = 2, c2y = 0, c2r = 2;
+    plotCircle(c1x, c1y, c1r, '#2878bd', 2);
+    plotCircle(c2x, c2y, c2r, '#e58b35', 2);
+    const pts = getCircleIntersections(c1x, c1y, c1r, c2x, c2y, c2r);
+    if (Math.abs(l + 1) < 0.012) {
+      seg(1, yMin, 1, yMax, '#29966f', 3);
+    } else {
+      const den = 1 + l;
+      const cx = (2 * l) / den;
+      const r2 = cx * cx + 4 / den;
+      if (r2 >= 0 && Number.isFinite(r2)) {
+        const r = Math.sqrt(r2);
+        if (r < 100) plotCircle(cx, 0, r, '#29966f', 3);
+      }
+    }
+    if (pts) {
+      dot(pts[0].x, pts[0].y, 'A');
+      dot(pts[1].x, pts[1].y, 'B', 9, 22);
+    }
+    if (Math.abs(l + 1) < 0.012) {
+      status.innerHTML = '<b style="color:#21815f">λ = −1：二次项相消，曲线束退化为公共弦所在直线。</b>';
+      equation.textContent = 'C₁ − C₂ = 0  ⇔  −4x + 4 = 0  ⇔  x = 1';
+    } else {
+      status.textContent = '绿色曲线是当前曲线束成员。它始终经过固定的 A、B 两点；改变 λ，圆心和半径随之改变。';
+      equation.textContent = 'C₁ + λC₂ = 0： (1 + λ)(x² + y²) − 4λx − 4 = 0';
+    }
+  }
+
+  function drawLines(l) {
+    seg(xMin, xMin, xMax, xMax, '#2878bd', 2);
+    seg(xMin, -xMin, xMax, -xMax, '#e58b35', 2);
+    const a = l - 1;
+    const b = l + 1;
+    const dx = b;
+    const dy = -a;
+    const n = Math.hypot(dx, dy) || 1;
+    const scaleLen = 10 / n;
+    seg(-dx * scaleLen, -dy * scaleLen, dx * scaleLen, dy * scaleLen, '#29966f', 3);
+    dot(0, 0, 'P', 10, -10);
+    status.textContent = '三条直线都经过固定交点 P(0,0)。绿色直线随 λ 改变方向，形成以 P 为中心的直线束。';
+    equation.textContent = 'L₁ + λL₂ = 0： (y − x) + λ(y + x) = 0，即 (λ − 1)x + (λ + 1)y = 0';
+  }
+
+  function drawLineCircle(l) {
+    seg(xMin, 0, xMax, 0, '#2878bd', 2);
+    plotCircle(0, 0, 2, '#e58b35', 2);
+    if (Math.abs(l) < 0.012) {
+      seg(xMin, 0, xMax, 0, '#29966f', 3);
+    } else {
+      const cy = -1 / (2 * l);
+      const r = Math.sqrt(4 + 1 / (4 * l * l));
+      plotCircle(0, cy, r, '#29966f', 3);
+    }
+    dot(-2, 0, 'A', -20, -12);
+    dot(2, 0, 'B', 9, -12);
+    if (Math.abs(l) < 0.012) {
+      status.innerHTML = '<b style="color:#21815f">λ = 0：曲线束成员退化为原直线 y = 0。</b>';
+      equation.textContent = 'L + 0·C = 0  ⇔  y = 0';
+    } else {
+      status.textContent = '绿色曲线是一个经过固定 A、B 两点的圆。λ 越接近 0，圆的半径越大；λ = 0 时退化为原直线。';
+      equation.textContent = 'L + λC = 0： y + λ(x² + y² − 4) = 0';
+    }
+  }
+
+  function draw() {
+    const l = Number(slider.value);
+    value.textContent = 'λ = ' + l.toFixed(2);
+    axes();
+    if (kind === 'circles') drawCircles(l);
+    if (kind === 'lines') drawLines(l);
+    if (kind === 'linecircle') drawLineCircle(l);
+  }
+
+  const configs = {
+    circles: {
+      min: -4, max: 4, step: 0.01, v: 0.8,
+      legend: [['#2878bd', '圆 C₁'],['#e58b35', '圆 C₂'],['#29966f', '曲线束成员'],['#173b58', '固定公共点 A、B']],
+      presets: [[-2, 'λ = −2'],[-1, 'λ = −1（公共弦）'],[0, 'λ = 0（C₁）'],[1, 'λ = 1'],[2, 'λ = 2']],
+      note: '两圆：C₁：x² + y² − 4 = 0；C₂：(x − 2)² + y² − 4 = 0。公共点 A(1,√3)、B(1,−√3)。曲线束 C₁ + λC₂ = 0；λ = −1 时二次项消失，得到公共弦直线 x = 1。'
+    },
+    lines: {
+      min: -4, max: 4, step: 0.01, v: 0.8,
+      legend: [['#2878bd', '直线 L₁'],['#e58b35', '直线 L₂'],['#29966f', '曲线束成员'],['#173b58', '固定交点 P']],
+      presets: [[-2, 'λ = −2'],[-1, 'λ = −1（x = 0）'],[0, 'λ = 0（L₁）'],[1, 'λ = 1（y = 0）'],[2, 'λ = 2']],
+      note: '两直线：L₁：y − x = 0；L₂：y + x = 0。它们交于 P(0,0)。曲线束 L₁ + λL₂ = 0 中，每个成员都是经过 P 的直线。'
+    },
+    linecircle: {
+      min: -3, max: 3, step: 0.01, v: 0.8,
+      legend: [['#2878bd', '直线 L'],['#e58b35', '圆 C'],['#29966f', '曲线束成员'],['#173b58', '固定交点 A、B']],
+      presets: [[-2, 'λ = −2'],[-1, 'λ = −1'],[0, 'λ = 0（原直线）'],[1, 'λ = 1'],[2, 'λ = 2']],
+      note: '直线：L：y = 0；圆：C：x² + y² − 4 = 0。交点 A(−2,0)、B(2,0)。曲线束 L + λC = 0；λ ≠ 0 时为经过 A、B 的圆，λ = 0 时退化为原直线。'
+    }
+  };
+
+  let kind = 'circles';
+  function select(k) {
+    kind = k;
+    const c = configs[k];
+    slider.min = c.min;
+    slider.max = c.max;
+    slider.step = c.step;
+    slider.value = c.v;
+    setLegend(c.legend);
+    setPresets(c.presets);
+    note.textContent = c.note;
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.kind === k));
+    draw();
+  }
+  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => select(b.dataset.kind)));
+  slider.addEventListener('input', draw);
+  select('circles');
 })();
 </script>
 </body>
