@@ -82,6 +82,9 @@ body::after {
 </style>
 </head>
 <body>
+ <a href="../" class="back-home">
+    ← 返回 A Quiet Corner
+</a>
 <header class="wrap">
  <div class="kicker">A QUIET CORNER · MATHEMATICS NOTE</div>
  <h1>曲线束</h1>
@@ -199,6 +202,34 @@ body::after {
     height: 100%;
     pointer-events: none;
     z-index: 9999;
+}
+ .back-home {
+    position: fixed;
+    top: 22px;
+    left: 25px;
+    z-index: 10000;
+
+    display: inline-block;
+    padding: 10px 18px;
+
+    color: #356b9e;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(76, 131, 195, 0.2);
+    border-radius: 24px;
+
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+
+    backdrop-filter: blur(8px);
+    box-shadow: 0 3px 12px rgba(60, 100, 150, 0.08);
+    transition: all 0.25s ease;
+}
+
+.back-home:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 16px rgba(60, 100, 150, 0.15);
 }
 </style>
 
