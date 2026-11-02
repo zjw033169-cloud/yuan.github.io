@@ -63,6 +63,22 @@ th,td{padding:12px 10px;border-bottom:1px solid #e3ebf2;text-align:left;vertical
 th{font:600 13px system-ui,sans-serif;color:#52708a;background:#f5f9fc}
 footer{padding:15px 0 50px;text-align:center;color:#718397;font:13px/1.8 system-ui,sans-serif}
 @media(max-width:700px){header{padding:48px 0 30px}.two-col{grid-template-columns:1fr}.lab-frame{height:1050px}section{padding:21px 17px}table{font-size:13px}th,td{padding:9px 6px}}
+/* 小乔最帅：全屏斜向水印 */
+body::after {
+    content: "小乔最帅";
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: clamp(48px, 9vw, 110px);
+    font-weight: 800;
+    letter-spacing: 12px;
+    color: rgba(76, 131, 195, 0.055);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 9998;
+    user-select: none;
+}
 </style>
 </head>
 <body>
