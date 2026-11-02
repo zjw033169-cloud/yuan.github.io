@@ -79,6 +79,72 @@ body::after {
     z-index: 9998;
     user-select: none;
 }
+.donate-box {
+    margin-top: 55px;
+    padding: 28px 20px;
+    text-align: center;
+    background: rgba(237, 245, 255, 0.75);
+    border: 1px solid rgba(76, 131, 195, 0.18);
+    border-radius: 16px;
+}
+
+.donate-box p {
+    color: #6F8298;
+    font-size: 14px;
+    margin: 10px 0 20px;
+}
+
+.donate-button {
+    display: inline-block;
+    padding: 10px 28px;
+    color: white !important;
+    background: #4C83C3;
+    border-radius: 24px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.25s ease;
+}
+
+.donate-button:hover {
+    background: #315F91;
+    transform: translateY(-2px);
+}
+#sakura-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+ .back-home {
+    position: fixed;
+    top: 22px;
+    left: 25px;
+    z-index: 10000;
+
+    display: inline-block;
+    padding: 10px 18px;
+
+    color: #356b9e;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(76, 131, 195, 0.2);
+    border-radius: 24px;
+
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+
+    backdrop-filter: blur(8px);
+    box-shadow: 0 3px 12px rgba(60, 100, 150, 0.08);
+    transition: all 0.25s ease;
+}
+
+.back-home:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 16px rgba(60, 100, 150, 0.15);
+}
 </style>
 </head>
 <body>
@@ -193,98 +259,29 @@ body::after {
 </section>
 </main>
 <footer class="wrap">A Quiet Corner · Mathematics, Geometry & Exploration</footer>
- <canvas id="sakura-canvas"></canvas>
 
-<style>
- /* 文章末尾打赏区域 */
+<!-- 打赏框 HTML 放在 footer 后面，wrap 容器内 -->
+<div class="wrap">
   <div class="donate-box">
     <div style="font-size: 25px;">☕</div>
-
     <h3>感谢你读到这里。</h3>
-
     <p>
         如果这篇文章对你有所启发，<br>
         欢迎请小乔喝杯奶茶，助力小乔变成奶龙。
     </p>
-
     <a href="https://afdian.com/a/zjw033169"
        target="_blank"
        rel="noopener noreferrer"
        class="donate-button">
         支持作者
     </a>
-
-</div>
     <p style="font-size: 12px;">
         A Quiet Corner · 感谢每一份善意
     </p>
-.donate-box {
-    margin-top: 55px;
-    padding: 28px 20px;
-    text-align: center;
-    background: rgba(237, 245, 255, 0.75);
-    border: 1px solid rgba(76, 131, 195, 0.18);
-    border-radius: 16px;
-}
+  </div>
+</div>
 
-.donate-box p {
-    color: #6F8298;
-    font-size: 14px;
-    margin: 10px 0 20px;
-}
-
-.donate-button {
-    display: inline-block;
-    padding: 10px 28px;
-    color: white !important;
-    background: #4C83C3;
-    border-radius: 24px;
-    text-decoration: none;
-    font-size: 14px;
-    transition: all 0.25s ease;
-}
-
-.donate-button:hover {
-    background: #315F91;
-    transform: translateY(-2px);
-}
-#sakura-canvas {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9999;
-}
- .back-home {
-    position: fixed;
-    top: 22px;
-    left: 25px;
-    z-index: 10000;
-
-    display: inline-block;
-    padding: 10px 18px;
-
-    color: #356b9e;
-    background: rgba(255, 255, 255, 0.78);
-    border: 1px solid rgba(76, 131, 195, 0.2);
-    border-radius: 24px;
-
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 600;
-
-    backdrop-filter: blur(8px);
-    box-shadow: 0 3px 12px rgba(60, 100, 150, 0.08);
-    transition: all 0.25s ease;
-}
-
-.back-home:hover {
-    background: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 5px 16px rgba(60, 100, 150, 0.15);
-}
-</style>
+<canvas id="sakura-canvas"></canvas>
 
 <script>
 (() => {
