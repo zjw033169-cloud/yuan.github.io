@@ -1,1 +1,177 @@
-test
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="曲线束的概念、方程与几何意义：两直线、直线与圆、两圆曲线束的交互式数学专题。">
+<title>曲线束：从公共点到曲线族</title>
+<style>
+:root{
+ --ink:#20364b;--muted:#62788b;--blue:#4c83c3;--blue-deep:#244f78;
+ --paper:#fbfdff;--line:#dce7f0;--accent:#d68b54;--green:#348b72;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+ margin:0;color:var(--ink);
+ font-family:Georgia,"Times New Roman","Noto Serif SC","Songti SC",serif;
+ background:
+  repeating-linear-gradient(135deg,rgba(77,131,195,.055) 0px,rgba(77,131,195,.055) 1px,transparent 1px,transparent 13px),
+  linear-gradient(145deg,#edf5fc 0%,#f8fbff 48%,#eef5fb 100%);
+ background-attachment:fixed;
+}
+body:before{
+ content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+ background:repeating-linear-gradient(135deg,transparent 0 34px,rgba(255,255,255,.42) 34px 36px,transparent 36px 70px);
+ animation:patternDrift 32s linear infinite;
+}
+@keyframes patternDrift{from{background-position:0 0}to{background-position:180px 0}}
+a{color:var(--blue-deep);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{width:min(1050px,calc(100% - 34px));margin:auto}
+header{padding:76px 0 52px}
+.kicker{font:600 12px/1.4 system-ui,sans-serif;letter-spacing:.22em;color:var(--blue);text-transform:uppercase}
+h1{font-size:clamp(38px,7vw,66px);line-height:1.08;letter-spacing:-.04em;margin:16px 0}
+.lead{max-width:710px;color:#526b80;font-size:18px;line-height:1.9}
+.hero-rule{width:76px;height:3px;background:var(--blue);margin:28px 0}
+nav{display:flex;gap:9px;flex-wrap:wrap;margin-top:26px}
+nav a{font:13px system-ui,sans-serif;padding:8px 12px;border:1px solid #cbdbe9;border-radius:30px;background:#ffffffa8}
+main{padding-bottom:70px}
+section{margin:22px 0 30px;padding:clamp(20px,4vw,36px);background:rgba(255,255,255,.88);border:1px solid rgba(202,218,232,.9);border-radius:19px;box-shadow:0 12px 35px rgba(38,76,111,.055);backdrop-filter:blur(5px)}
+h2{font-size:clamp(25px,4vw,34px);margin:0 0 18px;letter-spacing:-.025em}
+h3{font-size:21px;margin:27px 0 10px}
+p{font-size:16px;line-height:1.95;margin:10px 0;color:#425c72}
+.smallcaps{font:600 11px system-ui,sans-serif;letter-spacing:.18em;color:var(--blue);text-transform:uppercase}
+.formula{
+ margin:16px 0;padding:17px 20px;border-left:3px solid var(--blue);
+ background:#f2f7fc;border-radius:0 11px 11px 0;
+ font-family:"Times New Roman",Georgia,serif;font-size:clamp(17px,2.4vw,21px);
+ line-height:1.9;overflow-wrap:anywhere;color:#183b59
+}
+.formula.center{text-align:center}
+.note{padding:14px 17px;background:#f8f6f0;border:1px solid #eee5d4;border-radius:11px;color:#665b48}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mini{padding:18px;background:#f7fafd;border:1px solid #e1eaf2;border-radius:13px}
+.mini h3{margin:0 0 8px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:18px 0}
+.steps li{counter-increment:s;position:relative;padding:4px 0 15px 43px;color:#425c72;line-height:1.85}
+.steps li:before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:2px;color:var(--blue);font:600 13px system-ui,sans-serif;letter-spacing:.05em}
+.lab-frame{width:100%;height:980px;border:1px solid #dce7f0;border-radius:13px;background:#fff}
+.caption{font:13px/1.7 system-ui,sans-serif;color:#718397;margin-top:10px}
+table{width:100%;border-collapse:collapse;margin:15px 0;font-size:15px}
+th,td{padding:12px 10px;border-bottom:1px solid #e3ebf2;text-align:left;vertical-align:top;line-height:1.7}
+th{font:600 13px system-ui,sans-serif;color:#52708a;background:#f5f9fc}
+footer{padding:15px 0 50px;text-align:center;color:#718397;font:13px/1.8 system-ui,sans-serif}
+@media(max-width:700px){header{padding:48px 0 30px}.two-col{grid-template-columns:1fr}.lab-frame{height:1050px}section{padding:21px 17px}table{font-size:13px}th,td{padding:9px 6px}}
+</style>
+</head>
+<body>
+<header class="wrap">
+ <div class="kicker">A QUIET CORNER · MATHEMATICS NOTE</div>
+ <h1>曲线束</h1>
+ <div class="hero-rule"></div>
+ <p class="lead">如果两条曲线有两个公共点，那么经过这两个点的曲线，能不能用一个参数统一表示？<br>曲线束把这个问题变成一个简单而优美的代数表达式。</p>
+ <nav>
+  <a href="#idea">基本思想</a><a href="#algebra">代数原理</a><a href="#types">三类曲线束</a><a href="#lab">交互实验</a><a href="#summary">规律总结</a>
+ </nav>
+</header>
+<main class="wrap">
+<section id="idea">
+ <div class="smallcaps">01 / THE IDEA</div>
+ <h2>什么是曲线束？</h2>
+ <p>设平面上有两条曲线，它们的方程分别为：</p>
+ <div class="formula center">F(x,y)=0，&nbsp;&nbsp; G(x,y)=0</div>
+ <p>如果这两条曲线有公共点，那么任何满足下式的曲线：</p>
+ <div class="formula center">F(x,y)+λG(x,y)=0</div>
+ <p>都经过它们的所有公共点。这里 λ 是参数。随着 λ 改变，我们就得到一族曲线，称为由 F=0 与 G=0 生成的<strong>曲线束</strong>。</p>
+ <div class="note"><strong>先抓住核心：</strong>公共点处 F=0、G=0 同时成立，因此无论 λ 取什么值，F+λG 都等于 0。参数改变的是曲线的形状，不改变这些公共基点。</div>
+ <h3>为什么“线性组合”会保留公共点？</h3>
+ <ol class="steps">
+  <li>取两条曲线的任意一个公共点 P。</li>
+  <li>因为 P 在两条曲线上，所以 F(P)=0，G(P)=0。</li>
+  <li>代入曲线束方程：F(P)+λG(P)=0+λ·0=0。</li>
+  <li>因此 P 对所有参数 λ 都成立，是整族曲线共有的基点。</li>
+ </ol>
+ <p>注意：单独一个方程 F+λG=0 通常比原来的两个方程条件更宽松，它不只包含公共点，还包含许多其他点。曲线束的成员是一条完整曲线，而不是只有公共点组成的集合。</p>
+</section>
+
+<section id="algebra">
+ <div class="smallcaps">02 / THE ALGEBRA</div>
+ <h2>曲线束方程的两个端点</h2>
+ <p>曲线束的表达式为：</p>
+ <div class="formula center">F(x,y)+λG(x,y)=0</div>
+ <div class="two-col">
+  <div class="mini">
+   <h3>当 λ = 0</h3>
+   <div class="formula">F(x,y)=0</div>
+   <p>曲线束回到第一条原始曲线。</p>
+  </div>
+  <div class="mini">
+   <h3>当 λ 趋于无穷</h3>
+   <div class="formula">G(x,y)=0</div>
+   <p>将方程除以 λ，再令 λ 趋于无穷，曲线趋近第二条原始曲线。</p>
+  </div>
+ </div>
+ <p>所以可以把曲线束理解为：以两条原始曲线为两个特殊成员，中间连续生成一族共享基点的曲线。这里的“趋近”是指在有限坐标区域内的几何形状趋近，并非某个有限参数已经等于无穷大。</p>
+</section>
+
+<section id="types">
+ <div class="smallcaps">03 / THREE CASES</div>
+ <h2>三种常见曲线束</h2>
+
+ <h3>一、两条直线的曲线束</h3>
+ <p>设两条相交直线为：</p>
+ <div class="formula center">L₁：a₁x+b₁y+c₁=0<br>L₂：a₂x+b₂y+c₂=0</div>
+ <p>它们的交点记为 P。由两条直线生成的曲线束为：</p>
+ <div class="formula center">L₁+λL₂=0</div>
+ <p>因为 P 同时满足 L₁(P)=0 和 L₂(P)=0，所以曲线束中的每一条直线都经过 P。改变 λ，直线绕着固定交点 P 转动。</p>
+ <div class="note">当 λ=0，得到 L₁；当 λ 趋于无穷，直线趋近 L₂。若两条直线平行，则它们没有有限公共交点，不构成通常意义下以有限点为基点的相交直线束。</div>
+
+ <h3>二、一条直线与一个圆的曲线束</h3>
+ <p>设直线与圆相交于两个不同点 A、B：</p>
+ <div class="formula center">L：ax+by+c=0<br>C：x²+y²+Dx+Ey+F=0</div>
+ <p>曲线束可以写成：</p>
+ <div class="formula center">L+λC=0</div>
+ <p>由于 A、B 同时满足 L=0 和 C=0，因此每一个曲线束成员都经过 A、B。展开后：</p>
+ <div class="formula center">λ(x²+y²)+(a+λD)x+(b+λE)y+(c+λF)=0</div>
+ <p>当 λ≠0 时，二次项系数不为零，方程表示一个圆；当 λ=0 时，二次项消失，退化为原直线 L。</p>
+ <div class="note">因此，直线与圆相交于两个不同点时，可以生成一族经过这两个固定交点的圆；原直线是这族曲线的一个退化成员。</div>
+
+ <h3>三、两个圆的曲线束</h3>
+ <p>设两个圆为：</p>
+ <div class="formula center">C₁：x²+y²+D₁x+E₁y+F₁=0<br>C₂：x²+y²+D₂x+E₂y+F₂=0</div>
+ <p>曲线束方程为：</p>
+ <div class="formula center">C₁+λC₂=0</div>
+ <p>如果两圆有两个不同交点 A、B，那么曲线束中的每个成员都经过 A、B。特别地，取 λ=−1：</p>
+ <div class="formula center">C₁−C₂=0</div>
+ <p>两个圆的 x²、y² 项系数相同，相减后这两个二次项消失，剩下一个一次方程：</p>
+ <div class="formula center">(D₁−D₂)x+(E₁−E₂)y+(F₁−F₂)=0</div>
+ <p>这条直线经过 A、B，因此就是两圆的公共弦所在直线，也称为<strong>根轴</strong>。</p>
+ <div class="note">λ=−1 并不是一个神秘的固定规律。它来自两个圆的二次项系数相同：为了消去二次项，两个方程相减即可。若二次项系数没有归一化为相同数值，则应先作相应倍数调整。</div>
+</section>
+
+<section id="lab">
+ <div class="smallcaps">04 / INTERACTIVE LAB</div>
+ <h2>动手观察：参数如何改变曲线？</h2>
+ <p>下面嵌入交互实验。选择不同类型的曲线束，拖动 λ，观察公共基点保持不变、曲线形状发生变化的过程。</p>
+ <iframe class="lab-frame" src="curve_pencil_lab.html" title="曲线束交互实验室" loading="lazy"></iframe>
+ <div class="caption">如果实验区没有显示，请确认 curve_pencil_lab.html 与本页面放在同一个文件夹，并且两个文件都已上传到网站。</div>
+</section>
+
+<section id="summary">
+ <div class="smallcaps">05 / AT A GLANCE</div>
+ <h2>三类曲线束对照</h2>
+ <table>
+  <thead><tr><th>原始曲线</th><th>曲线束方程</th><th>固定基点</th><th>特殊成员</th></tr></thead>
+  <tbody>
+   <tr><td>两条相交直线</td><td>L₁+λL₂=0</td><td>两直线交点</td><td>λ=0 得 L₁；λ→∞ 趋近 L₂</td></tr>
+   <tr><td>直线与圆</td><td>L+λC=0</td><td>直线与圆的两个交点</td><td>λ=0 得直线；λ→∞ 趋近圆</td></tr>
+   <tr><td>两个圆</td><td>C₁+λC₂=0</td><td>两圆的两个交点</td><td>λ=−1 得根轴（公共弦所在直线）</td></tr>
+  </tbody>
+ </table>
+ <p>统一的思路只有一句话：<strong>先找两条原始曲线的公共点，再用方程的线性组合构造经过这些公共点的曲线族。</strong></p>
+</section>
+</main>
+<footer class="wrap">A Quiet Corner · Mathematics, Geometry & Exploration</footer>
+</body>
+</html>

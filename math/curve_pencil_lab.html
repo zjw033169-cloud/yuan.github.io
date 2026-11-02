@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>曲线束交互实验室</title>
+<style>
+:root{--ink:#18324b;--blue:#2878bd;--orange:#e58b35;--green:#29966f}
+*{box-sizing:border-box}
+body{margin:0;background:#f2f6fa;color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+main{max-width:1000px;margin:22px auto;padding:0 15px 30px}
+h1{font-size:clamp(23px,4vw,30px);margin:0 0 7px}
+.intro{color:#587087;line-height:1.65;margin:0 0 18px}
+.panel{background:#fff;border:1px solid #dce6ef;border-radius:16px;padding:16px;box-shadow:0 5px 18px #18324b0b}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tab{border:1px solid #cbd9e6;background:#f7fafc;color:var(--ink);border-radius:9px;padding:9px 13px;cursor:pointer}
+.tab.active{background:#e6f1fb;border-color:#2878bd;color:#17588e;font-weight:700}
+canvas{width:100%;height:auto;display:block;background:white;border-radius:10px}
+.legend{display:flex;flex-wrap:wrap;gap:13px;margin:12px 0;color:#50677c;font-size:13px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.controls{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:12px}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.value{min-width:100px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+button{border:1px solid #cbd9e6;background:#f7fafc;color:var(--ink);border-radius:9px;padding:8px 11px;cursor:pointer}
+button:hover{background:#eaf3fb}
+.info{line-height:1.75;margin-top:14px;font-size:15px}
+.eq{background:#f4f8fb;border-radius:10px;padding:12px;margin-top:9px;font-family:Georgia,"Times New Roman",serif;font-size:17px;overflow-wrap:anywhere}
+.note{font-size:13px;color:#62788b;line-height:1.7;margin:13px 2px 0}
+@media(max-width:600px){main{margin:12px auto}.panel{padding:10px}.controls{grid-template-columns:1fr}.value{text-align:left}}
+</style>
+</head>
+<body>
+<main>
+<h1>曲线束交互实验室</h1>
+<p class="intro">切换不同的曲线组合，拖动 λ，观察公共点如何保持不变，以及曲线束在特殊参数下如何退化。</p>
+<section class="panel">
+ <div class="tabs">
+  <button class="tab active" data-kind="circles">两圆曲线束</button>
+  <button class="tab" data-kind="lines">两直线曲线束</button>
+  <button class="tab" data-kind="linecircle">直线与圆的曲线束</button>
+ </div>
+ <canvas id="plot" width="900" height="620"></canvas>
+ <div class="legend" id="legend"></div>
+ <div class="controls">
+  <div><label for="lambda"><strong>参数 λ</strong></label><input id="lambda" type="range" min="-4" max="4" step="0.01" value="0.8"></div>
+  <div class="value" id="value">λ = 0.80</div>
+ </div>
+ <div class="buttons" id="presets"></div>
+ <div class="info"><div id="status"></div><div class="eq" id="equation"></div></div>
+</section>
+<p class="note" id="note"></p>
+</main>
+<script>
+(()=>{
+const canvas=document.getElementById('plot'),ctx=canvas.getContext('2d');
+const slider=document.getElementById('lambda'),value=document.getElementById('value');
+const status=document.getElementById('status'),equation=document.getElementById('equation');
+const legend=document.getElementById('legend'),presets=document.getElementById('presets'),note=document.getElementById('note');
+const W=canvas.width,H=canvas.height,xmin=-4.5,xmax=6.5,ymin=-4.5,ymax=4.5;
+const sx=x=>(x-xmin)/(xmax-xmin)*W,sy=y=>H-(y-ymin)/(ymax-ymin)*H;
+let kind='circles';
+function seg(x1,y1,x2,y2,color,width=2,dash=[]){
+ ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;ctx.setLineDash(dash);
+ ctx.moveTo(sx(x1),sy(y1));ctx.lineTo(sx(x2),sy(y2));ctx.stroke();ctx.setLineDash([]);
+}
+function circle(cx,cy,r,color,width=3){
+ if(!Number.isFinite(r)||r<0)return;
+ ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=width;
+ ctx.arc(sx(cx),sy(cy),r*W/(xmax-xmin),0,Math.PI*2);ctx.stroke();
+}
+function dot(x,y,label,dx=9,dy=-9){
+ ctx.beginPath();ctx.fillStyle='#173b58';ctx.arc(sx(x),sy(y),5.5,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle='#173b58';ctx.font='bold 16px system-ui';ctx.fillText(label,sx(x)+dx,sy(y)+dy);
+}
+function axes(){
+ ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+ for(let x=Math.ceil(xmin);x<=xmax;x++){
+  seg(x,ymin,x,ymax,x===0?'#8095a8':'#e8eef3',x===0?2:1);
+  if(x!==0){ctx.fillStyle='#72869a';ctx.font='13px system-ui';ctx.fillText(x,sx(x)-4,sy(0)+18);}
+ }
+ for(let y=Math.ceil(ymin);y<=ymax;y++){
+  seg(xmin,y,xmax,y,y===0?'#8095a8':'#e8eef3',y===0?2:1);
+  if(y!==0){ctx.fillStyle='#72869a';ctx.font='13px system-ui';ctx.fillText(y,sx(0)+8,sy(y)+4);}
+ }
+ ctx.fillStyle='#526b80';ctx.font='15px system-ui';ctx.fillText('x',W-24,sy(0)-10);ctx.fillText('y',sx(0)+10,20);
+}
+function setLegend(items){legend.innerHTML=items.map(([c,t])=>`<span><i class="dot" style="background:${c}"></i>${t}</span>`).join('')}
+function setPresets(items){presets.innerHTML='';items.forEach(([v,t])=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{slider.value=v;draw()};presets.appendChild(b)})}
+function drawCircles(l){
+ // C1: x²+y²-4=0; C2: (x-2)²+y²-4=0
+ circle(0,0,2,'#2878bd',3);circle(2,0,2,'#e58b35',3);
+ if(Math.abs(l+1)<0.012)seg(1,ymin,1,ymax,'#29966f',4);
+ else{
+  const den=1+l,cx=2*l/den,r2=cx*cx+4/den;
+  if(r2>=0&&Number.isFinite(r2)){const r=Math.sqrt(r2);if(r<100)circle(cx,0,r,'#29966f',4)}
+ }
+ const h=Math.sqrt(3);dot(1,h,'A');dot(1,-h,'B',9,22);
+ if(Math.abs(l+1)<0.012){
+  status.innerHTML='<b style="color:#21815f">λ = −1：二次项相消，曲线束退化为公共弦所在直线。</b>';
+  equation.textContent='C₁ − C₂ = 0  ⇔  −4x + 4 = 0  ⇔  x = 1';
+ }else{
+  status.textContent='绿色曲线是当前曲线束成员。它始终经过固定的 A、B 两点；改变 λ，圆心和半径随之改变。';
+  equation.textContent='C₁ + λC₂ = 0： (1 + λ)(x² + y²) − 4λx − 4 = 0';
+ }
+}
+function drawLines(l){
+ // L1: y-x=0; L2: y+x=0; family (λ-1)x+(λ+1)y=0
+ seg(xmin,xmin,xmax,xmax,'#2878bd',3);
+ seg(xmin,-xmin,xmax,-xmax,'#e58b35',3);
+ const a=l-1,b=l+1;
+ // direction vector (b,-a)
+ const dx=b,dy=-a,n=Math.hypot(dx,dy)||1;
+ const scale=20/n;
+ seg(-dx*scale,-dy*scale,dx*scale,dy*scale,'#29966f',4);
+ dot(0,0,'P',10,-10);
+ status.textContent='三条直线都经过固定交点 P(0,0)。绿色直线随 λ 改变方向，形成以 P 为中心的直线束。';
+ equation.textContent='L₁ + λL₂ = 0： (y − x) + λ(y + x) = 0，即 (λ − 1)x + (λ + 1)y = 0';
+}
+function drawLineCircle(l){
+ // line y=0; circle x²+y²-4=0; family y+λ(x²+y²-4)=0
+ seg(xmin,0,xmax,0,'#2878bd',3);
+ circle(0,0,2,'#e58b35',3);
+ if(Math.abs(l)<0.012)seg(xmin,0,xmax,0,'#29966f',4);
+ else{
+  const cy=-1/(2*l),r=Math.sqrt(4+1/(4*l*l));
+  circle(0,cy,r,'#29966f',4);
+ }
+ dot(-2,0,'A',-20,-12);dot(2,0,'B',9,-12);
+ if(Math.abs(l)<0.012){
+  status.innerHTML='<b style="color:#21815f">λ = 0：曲线束成员退化为原直线 y = 0。</b>';
+  equation.textContent='L + 0·C = 0  ⇔  y = 0';
+ }else{
+  status.textContent='绿色曲线是一个经过固定 A、B 两点的圆。λ 越接近 0，圆的半径越大；λ = 0 时退化为原直线。';
+  equation.textContent='L + λC = 0： y + λ(x² + y² − 4) = 0';
+ }
+}
+function draw(){
+ const l=Number(slider.value);value.textContent='λ = '+l.toFixed(2);axes();
+ if(kind==='circles')drawCircles(l);
+ if(kind==='lines')drawLines(l);
+ if(kind==='linecircle')drawLineCircle(l);
+}
+const configs={
+ circles:{min:-4,max:4,step:.01,v:.8,legend:[['#2878bd','圆 C₁'],['#e58b35','圆 C₂'],['#29966f','曲线束成员'],['#173b58','固定公共点 A、B']],presets:[[-2,'λ = −2'],[-1,'λ = −1（公共弦）'],[0,'λ = 0（C₁）'],[1,'λ = 1'],[2,'λ = 2']],note:'两圆：C₁：x² + y² − 4 = 0；C₂：(x − 2)² + y² − 4 = 0。公共点 A(1,√3)、B(1,−√3)。曲线束 C₁ + λC₂ = 0；λ = −1 时二次项消失，得到公共弦直线 x = 1。'},
+ lines:{min:-4,max:4,step:.01,v:.8,legend:[['#2878bd','直线 L₁'],['#e58b35','直线 L₂'],['#29966f','曲线束成员'],['#173b58','固定交点 P']],presets:[[-2,'λ = −2'],[-1,'λ = −1（x = 0）'],[0,'λ = 0（L₁）'],[1,'λ = 1（y = 0）'],[2,'λ = 2']],note:'两直线：L₁：y − x = 0；L₂：y + x = 0。它们交于 P(0,0)。曲线束 L₁ + λL₂ = 0 中，每个成员都是经过 P 的直线。'},
+ linecircle:{min:-3,max:3,step:.01,v:.8,legend:[['#2878bd','直线 L'],['#e58b35','圆 C'],['#29966f','曲线束成员'],['#173b58','固定交点 A、B']],presets:[[-2,'λ = −2'],[-1,'λ = −1'],[0,'λ = 0（原直线）'],[1,'λ = 1'],[2,'λ = 2']],note:'直线：L：y = 0；圆：C：x² + y² − 4 = 0。交点 A(−2,0)、B(2,0)。曲线束 L + λC = 0；λ ≠ 0 时为经过 A、B 的圆，λ = 0 时退化为原直线。'}
+};
+function select(k){
+ kind=k;const c=configs[k];slider.min=c.min;slider.max=c.max;slider.step=c.step;slider.value=c.v;
+ setLegend(c.legend);setPresets(c.presets);note.textContent=c.note;
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.kind===k));draw();
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>select(b.dataset.kind)));
+slider.addEventListener('input',draw);select('circles');
+})();
+</script>
+</body>
+</html>
