@@ -82,8 +82,29 @@ body::after {
 </style>
 </head>
 <body>
+ <div class="donate-box">
+    <div style="font-size: 25px;">☕</div>
+
+    <h3>感谢你读到这里。</h3>
+
+    <p>
+        如果这篇文章对你有所启发，<br>
+        欢迎请作者喝杯咖啡。
+    </p>
+
+    <a href="https://afdian.com/a/zjw033169"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="donate-button">
+        支持作者
+    </a>
+
+    <p style="font-size: 12px;">
+        A Quiet Corner · 感谢每一份善意
+    </p>
+</div>
  <a href="../" class="back-home">
-    ← 返回 A Quiet Corner
+    ← 返回首页
 </a>
 <header class="wrap">
  <div class="kicker">A QUIET CORNER · MATHEMATICS NOTE</div>
@@ -195,6 +216,37 @@ body::after {
  <canvas id="sakura-canvas"></canvas>
 
 <style>
+ /* 文章末尾打赏区域 */
+.donate-box {
+    margin-top: 55px;
+    padding: 28px 20px;
+    text-align: center;
+    background: rgba(237, 245, 255, 0.75);
+    border: 1px solid rgba(76, 131, 195, 0.18);
+    border-radius: 16px;
+}
+
+.donate-box p {
+    color: #6F8298;
+    font-size: 14px;
+    margin: 10px 0 20px;
+}
+
+.donate-button {
+    display: inline-block;
+    padding: 10px 28px;
+    color: white !important;
+    background: #4C83C3;
+    border-radius: 24px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.25s ease;
+}
+
+.donate-button:hover {
+    background: #315F91;
+    transform: translateY(-2px);
+}
 #sakura-canvas {
     position: fixed;
     inset: 0;
